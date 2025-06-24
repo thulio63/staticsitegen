@@ -46,17 +46,26 @@ def split_nodes_image(old_nodes: list):
     index_lists = []
     for node in old_nodes:
         if node.text_type == TextType.PLAIN:
-            all_links = extract_markdown_images(node.text) # all images found
-            if len(all_links) == 0:
+            all_images = extract_markdown_images(node.text) # all images found
+            if len(all_images) == 0:
                 new_nodes.append(node)
                 continue
+            # for link in all_images:
+            #     file_path = str(link[1])
+            #     if file_path[0] == '/':
+            #         index = all_images.index(link)
+            #         new_tup = (link[0], f".{file_path}")
+            #         all_images[index] = new_tup
+            #         #link[1][0] = f".{link[1][0]}"
+            #print(all_images)
             # indexes of brackets and parentheses put in list, appended to index_lists
-            for tup in all_links:
+            for tup in all_images:
                 first = node.text.find(tup[0]) - 1
                 end = node.text.find(tup[0]) + len(tup[0])
                 second = node.text.find(tup[1]) - 1
                 last = node.text.find(tup[1]) + len(tup[1])
                 index_lists.append([first, end, second, last])
+            #print(index_lists)
             # checks before first link to find preceding text
             preceding = node.text[:index_lists[0][0] - 1]
             if preceding != "":
@@ -64,6 +73,8 @@ def split_nodes_image(old_nodes: list):
                 new_nodes.append(TextNode(preceding, TextType.PLAIN))
             # adds links and text between links
             for num in range(len(index_lists)):
+                #print(node.text[index_lists[num][0] + 1:index_lists[num][1]])
+                #print(node.text[index_lists[num][2] + 1:index_lists[num][3]])
                 new_nodes.append(TextNode(node.text[index_lists[num][0] + 1:index_lists[num][1]], TextType.IMAGE, node.text[index_lists[num][2] + 1:index_lists[num][3]]))
                 # adds middle text if there are more links to come
                 if num < len(index_lists) - 1:
@@ -90,13 +101,17 @@ def split_nodes_link(old_nodes: list):
             if len(all_links) == 0:
                 new_nodes.append(node)
                 continue
+            #print(all_links)
             # indexes of brackets and parentheses put in list, appended to index_lists
             for tup in all_links:
                 first = node.text.find(tup[0]) - 1
                 end = node.text.find(tup[0]) + len(tup[0])
-                second = node.text.find(tup[1]) - 1
-                last = node.text.find(tup[1]) + len(tup[1])
+                # assumes correct format
+                second = end + 1 #node.text.find(tup[1]) - 1
+                last = second + len(tup[1]) + 1 #node.text.find(tup[1]) + len(tup[1])
                 index_lists.append([first, end, second, last])
+                #print(node.text[first],node.text[end],node.text[second],node.text[last])
+            #print(index_lists)
             # checks before first link to find preceding text
             preceding = node.text[:index_lists[0][0]]
             if preceding != "":
@@ -104,17 +119,22 @@ def split_nodes_link(old_nodes: list):
                 new_nodes.append(TextNode(preceding, TextType.PLAIN))
             # adds links and text between links
             for num in range(len(index_lists)):
+                #print(node.text[index_lists[num][0] + 1:index_lists[num][1]])
+                #print(node.text[index_lists[num][2] + 1:index_lists[num][3]])
                 new_nodes.append(TextNode(node.text[index_lists[num][0] + 1:index_lists[num][1]], TextType.LINK, node.text[index_lists[num][2] + 1:index_lists[num][3]]))
                 # adds middle text if there are more links to come
                 if num < len(index_lists) - 1:
                     intermediate = node.text[index_lists[num][3]+1:index_lists[num+1][0]]
+                    #print(f"*{intermediate}*")
                     if intermediate != "":
                         new_nodes.append(TextNode(intermediate, TextType.PLAIN))
-            # checks after final link to find following text
-            following = node.text[index_lists[len(index_lists)-1][3]+1:]
-            if following != "":
-                #print(f"following: {following}")
-                new_nodes.append(TextNode(following, TextType.PLAIN))
+                # checks after final link to find following text
+                elif num == len(index_lists) - 1:
+                    following = node.text[index_lists[num][3]+1:]
+                    #print(f"*{following}*")
+                    if following != "":
+                        #print(f"following: {following}")
+                        new_nodes.append(TextNode(following, TextType.PLAIN))
         else:
             new_nodes.append(node)
     return new_nodes
@@ -157,7 +177,7 @@ def block_to_block_type(block: str):
                 continue
             quote = False
         # checks if lines start with '- '
-        for line in block_lines:
+        for line in block_lines: # DOESN'T CATCH INDENTS, IMPLEMENT % TO COUNT SPACES
             if line.startswith('- '):
                 continue
             unordered = False
@@ -238,11 +258,66 @@ def markdown_to_html_node(markdown: str):
                 # creates blockquote node to add to div node
                 block_node = ParentNode("blockquote", children)
                 all_nodes.append(block_node)
-            case BlockType.UNORDERED_LIST:
+            case BlockType.UNORDERED_LIST: # does not accept indents, need to iterate
                 #<ul><li></li><li></li>
-                pass
+                
+                all_images = extract_markdown_images(block) # all images found
+                if len(all_images) != 0:
+                    print("shit! an image!")
+                    print(all_images)
+                    #new_nodes.append(node)
+                    #continue
+                    
+                all_links = extract_markdown_links(block) # all links found
+                if len(all_links) != 0:
+                    print("shit! a link!")
+                    print(all_links)
+                    #new_nodes.append(node)
+                    #continue
+                
+                # split breaks into words, so splitlines will let us look at links and images. another problem to solve goddddddddddd
+                old_lines = block.splitlines()
+                mid_lines = []
+                new_lines = []
+                # this is closer but fuck me man
+                for line in old_lines:
+                    for sub_line in line.split("- "):
+                        new_lines.append(sub_line)
+                children = []
+                print(old_lines)
+                # creates list with blanks
+                for line in old_lines:
+                    line.strip()
+                    if line == '-':
+                        new_lines.append("")
+                        # add to breakers for tags
+                        continue
+                    new_lines.append(line)
+                # adds blank to end of list as flag
+                new_lines.append("")
+                #print(new_lines)
+                text = ""
+                # skips first blank, all blanks after mark new li node
+                for strip in range(1 ,len(new_lines)):
+                    # encountered blank, creates new li node in children
+                    if new_lines[strip] == "":
+                        children.append(LeafNode("li", text))
+                        text = ""
+                    # does not add space if first word in new text
+                    elif text == "":
+                        text += new_lines[strip]
+                    # builds string to be added to li node
+                    else:
+                        text += f" {new_lines[strip]}"
+                ul_node = ParentNode("ul", children)
+                all_nodes.append(ul_node)
+
             case BlockType.ORDERED_LIST:
                 #<ol><li></li><li></li>
+                old_lines = block.split()
+                new_lines = []
+                children = []
+                #print(old_lines)
                 pass
             case BlockType.PARAGRAPH:
                 #<p>    

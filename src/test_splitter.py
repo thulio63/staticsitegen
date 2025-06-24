@@ -40,8 +40,6 @@ class TestSplitter(unittest.TestCase):
             new_nodes
         )
     
-    
-
     def test_md_to_blocks(self):
         text = """This is **bolded** paragraph
 
@@ -123,12 +121,29 @@ the **same** even with inline stuff
         self.assertEqual(html, "<div><blockquote><p>This is a quote from a famous person. From what person?</p><p>I certainly do not know.</p></blockquote></div>")
 
     def test_unordered_list(self):
+        md = """- this is
+- a list"""
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(html, "<div><ul><li>this is</li><li>a list</li></ul></div>")
         
-        pass
+    def test_unordered_list_indent(self):
+        md = """- this is
+- a list
+- it
+    - has 
+    - an indent
+- is scary"""
+        #node = markdown_to_html_node(md)
+        #html = node.to_html()
+        #self.assertEqual(html, "<div><ul><li>this is</li><li>a list</li><li>it</li><ul><li>has</li><li>an indent</li></ul><li>is scary</li></ul></div>")
     
     def test_ordered_list(self):
-        
-        pass
+        md = """1. this is
+2. a list"""
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(html, "<div><ol><li>this is</li><li>a list</li></ol></div>")
     
     def test_paragraphs(self):
         md = """This is a **bolded** paragraph
