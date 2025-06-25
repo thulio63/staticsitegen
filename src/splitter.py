@@ -171,27 +171,35 @@ def block_to_block_type(block: str):
         unordered = True
         ordered = True
         block_lines = block.splitlines()
-        # checks if lines start with '>'
         for line in block_lines:
-            if line.startswith('>'):
+            if ordered:
+                match = re.match(r'(\d\.)', line)
+            # checks if lines start with '>'
+            if line.startswith('>') and quote:
+                unordered = False
+                ordered = False
                 continue
-            quote = False
-        # checks if lines start with '- '
-        for line in block_lines: # DOESN'T CATCH INDENTS, IMPLEMENT % TO COUNT SPACES
-            if line.startswith('- '):
+            # checks if lines start with '- '
+            elif line.startswith('- ') and unordered:
+                quote = False
+                ordered = False
                 continue
-            unordered = False
-        # checks if lines start with ascending numbers
-        for i in range(len(block_lines)):
-            if block_lines[i].startswith(f"{i+1}."):
+            # checks if lines start with number and period
+            elif match is not None and ordered:
+                unordered = False
+                quote = False
                 continue
-            ordered = False
-            
+            # if block does not fully meet criteria for any type
+            else:
+                ordered = False
+                unordered = False
+                quote = False
+                break
         if quote:    
             return BlockType.QUOTE    
-        if unordered:    
+        elif unordered:    
             return BlockType.UNORDERED_LIST
-        if ordered:    
+        elif ordered:    
             return BlockType.ORDERED_LIST
         return BlockType.PARAGRAPH
     
@@ -217,7 +225,7 @@ def markdown_to_html_node(markdown: str):
                 code_node = LeafNode("code", raw_text)
                 preformatted = ParentNode("pre", [code_node])
                 all_nodes.append(preformatted)
-            case BlockType.QUOTE:
+            case BlockType.QUOTE: # revisit with method used for lists, breaking down nodes
                 #<blockquote><p>
                 # add cite here boyo!!!!!
                 # creates list to pass to blockquote node
@@ -258,67 +266,71 @@ def markdown_to_html_node(markdown: str):
                 # creates blockquote node to add to div node
                 block_node = ParentNode("blockquote", children)
                 all_nodes.append(block_node)
-            case BlockType.UNORDERED_LIST: # does not accept indents, need to iterate
+            case BlockType.UNORDERED_LIST: # does not accept indents, need to implement
                 #<ul><li></li><li></li>
-                
-                all_images = extract_markdown_images(block) # all images found
-                if len(all_images) != 0:
-                    print("shit! an image!")
-                    print(all_images)
-                    #new_nodes.append(node)
-                    #continue
-                    
-                all_links = extract_markdown_links(block) # all links found
-                if len(all_links) != 0:
-                    print("shit! a link!")
-                    print(all_links)
-                    #new_nodes.append(node)
-                    #continue
-                
-                # split breaks into words, so splitlines will let us look at links and images. another problem to solve goddddddddddd
+                # breaks list items into seperate lines, where they can be changed into nodes
                 old_lines = block.splitlines()
-                mid_lines = []
+                #print(old_lines)
                 new_lines = []
-                # this is closer but fuck me man
+                # splits by -, replaces with blanks as flags
                 for line in old_lines:
                     for sub_line in line.split("- "):
-                        new_lines.append(sub_line)
+                        # appends blanks for flags
+                        if sub_line == "":
+                            new_lines.append(sub_line)
+                            continue              
+                        # breaks line into nodes
+                        sub_nodes = text_to_textnodes(sub_line)
+                        # convert textnodes to htmlnodes
+                        html_nodes = []
+                        for text_node in sub_nodes:
+                            html_nodes.append(TextNode.text_node_to_html_node(text_node))
+                        #print(html_nodes)
+                        # adds nodes to list, convert plain to text in next step
+                        for node in html_nodes:
+                            new_lines.append(node)
                 children = []
-                print(old_lines)
-                # creates list with blanks
-                for line in old_lines:
-                    line.strip()
-                    if line == '-':
-                        new_lines.append("")
-                        # add to breakers for tags
-                        continue
-                    new_lines.append(line)
+                
                 # adds blank to end of list as flag
                 new_lines.append("")
+                kids = []
                 #print(new_lines)
-                text = ""
+                
                 # skips first blank, all blanks after mark new li node
                 for strip in range(1 ,len(new_lines)):
-                    # encountered blank, creates new li node in children
+                    # encountered blank, resets kids
                     if new_lines[strip] == "":
-                        children.append(LeafNode("li", text))
-                        text = ""
-                    # does not add space if first word in new text
-                    elif text == "":
-                        text += new_lines[strip]
-                    # builds string to be added to li node
+                        children.append(ParentNode("li", kids))
+                        kids = []
+                    # adds node to kids
                     else:
-                        text += f" {new_lines[strip]}"
+                        kids.append(new_lines[strip])
                 ul_node = ParentNode("ul", children)
                 all_nodes.append(ul_node)
-
             case BlockType.ORDERED_LIST:
                 #<ol><li></li><li></li>
-                old_lines = block.split()
+                # breaks list items into seperate lines, where they can be changed into nodes
+                old_lines = block.splitlines()
+                #print(old_lines)
                 new_lines = []
                 children = []
-                #print(old_lines)
-                pass
+                for line in old_lines:
+                    # breaks lines apart by number
+                    splits = re.split(r'(\d\.)', line)
+                    #print(splits)
+                    # converts text into node
+                    text_node = text_to_textnodes(splits[2][1:])
+                    #print(text_node)
+                    # converts text node into html node
+                    html_node = TextNode.text_node_to_html_node(text_node[0])
+                    #print(html_node)
+
+                            
+                    children.append(LeafNode("li", html_node.to_html()))
+                #print(children)
+
+                ol_node = ParentNode("ol", children)
+                all_nodes.append(ol_node)
             case BlockType.PARAGRAPH:
                 #<p>    
                 edit_block = block.replace("\n", " ")     

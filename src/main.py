@@ -4,7 +4,7 @@ from pathlib import Path
 from splitter import markdown_to_html_node
 from htmlnode import HTMLNode
 
-def display_contents(search_path:str, verbose=False):
+def display_contents(search_path:str):
     curr_dir = os.getcwd()
     content_path = f"{curr_dir}/{search_path}"
     if os.path.isfile(content_path):
@@ -83,7 +83,8 @@ def clear_and_copy(verbose=False):
         if verbose:
             print("/static is empty")
     
-    display_contents("public", verbose)
+    if verbose:
+        display_contents("public", verbose)
 
 def extract_title(markdown: str, is_file=False, verbose=False):
     curr_dir = os.getcwd()
@@ -102,8 +103,9 @@ def extract_title(markdown: str, is_file=False, verbose=False):
     header_val = header_text[0].strip()
     return header_val
 
-def generate_page(from_path, template_path, dest_path):
-    print(f"Generating page from {from_path} to {dest_path} using template {template_path}")
+def generate_page(from_path, template_path, dest_path, verbose=False):
+    if verbose:
+        print(f"Generating page from {from_path} to {dest_path} using template {template_path}")
     curr_dir = os.getcwd()
     with open(f"{curr_dir}/{from_path}", 'r') as file:
         md_file = file.read()
@@ -113,19 +115,35 @@ def generate_page(from_path, template_path, dest_path):
     site_html = site_html_node.to_html()
     site_title = extract_title(md_file)
     template_file = template_file.replace("{{ Title }}", site_title)
+    if verbose:
+        print("Title replaced")
     template_file = template_file.replace("{{ Content }}", site_html)
+    if verbose:
+        print("Content replaced")
     site_file_path = Path(f"{curr_dir}/{dest_path}")
     site_file_path.parent.mkdir(parents=True, exist_ok=True)
+    if verbose:
+        print("Parent directories created")
     with open(site_file_path, 'w') as f:
         f.write(template_file)
-    print(f"File {dest_path} and any parent directories have been created.")
+    print(f"\nFile {dest_path} and any parent directories have been created.\n")
+    
+def generate_all_pages(template_path):
+    # search for all files in content and call generate_page on all of them
+    
+    
+    pass
 
 def main():
     clear_and_copy()
     #md_file = input("file to extract from:\t")
     #extract_title("content/index.md", True)
     generate_page("content/index.md", "template.html", "public/index.html")
-    display_contents("public")
+    generate_page("content/blog/glorfindel/index.md", "template.html", "public/blog/glorfindel/index.html")
+    generate_page("content/blog/tom/index.md", "template.html", "public/blog/tom/index.html")
+    generate_page("content/blog/majesty/index.md", "template.html", "public/blog/majesty/index.html")
+    generate_page("content/contact/index.md", "template.html", "public/contact/index.html")
+    #display_contents("public")
     
     
 main()
