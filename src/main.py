@@ -1,5 +1,6 @@
 import os
 import shutil
+import sys
 from pathlib import Path
 from splitter import markdown_to_html_node
 from htmlnode import HTMLNode
@@ -43,16 +44,17 @@ def dir_crawler_painter(list_of_contents):
     
     pass
 
-def clear_and_copy(verbose=False):
+def clear_and_copy(private_path, public_path, verbose=False):
     """Empties public dir and populates it with data in static dir."""
-    pub_path = "/Users/andrewthul/workspace/github.com/thulio63/staticsitegen/public"
-    stat_path = "/Users/andrewthul/workspace/github.com/thulio63/staticsitegen/static"
+    proj_home = "/Users/andrewthul/workspace/github.com/thulio63/staticsitegen" 
+    pub_path = f"{proj_home}/{public_path}"
+    priv_path = f"{proj_home}/{private_path}"
     public_contents = os.listdir(pub_path)
-    static_contents = os.listdir(stat_path)
+    static_contents = os.listdir(priv_path)
     
     if len(public_contents) > 0:
         if verbose:
-            print("/public has contents")
+            print(f"/{public_path} has contents")
         for path in public_contents:
             child_path = f"{pub_path}/{path}"
             # checks that path exists
@@ -74,38 +76,38 @@ def clear_and_copy(verbose=False):
         public_contents = os.listdir(pub_path)
         if len(public_contents) == 0:
             if verbose:
-                print("/public is now empty\n")
+                print(f"/{public_path} is now empty\n")
         else:
             if verbose:
                 raise Exception("Something survived the purge")
     else:
         if verbose:
-            print("/public is empty")
+            print(f"/{public_path} is empty")
 
     if ".DS_Store" in static_contents:
         static_contents.remove(".DS_Store")
     if len(static_contents) > 0:
         if verbose:
-            print("/static has contents")
+            print(f"/{private_path} has contents")
         for path in static_contents:
             # ensures that static path exists
-            if not os.path.exists(f"{stat_path}/{path}"):
+            if not os.path.exists(f"{priv_path}/{path}"):
                 if verbose:
-                    print(f"{stat_path}/{path}:\t doesn't exist!")
+                    print(f"{priv_path}/{path}:\t doesn't exist!")
                 continue
             if verbose:
-                print(f"copying {stat_path}/{path} to public")
-            if os.path.isfile(f"{stat_path}/{path}"):
-                shutil.copy(f"{stat_path}/{path}", f"{pub_path}/{path}")
+                print(f"copying {priv_path}/{path} to public")
+            if os.path.isfile(f"{priv_path}/{path}"):
+                shutil.copy(f"{priv_path}/{path}", f"{pub_path}/{path}")
                 if verbose:
                     print("copied!")
             else:
-                shutil.copytree(f"{stat_path}/{path}", f"{pub_path}/{path}")
+                shutil.copytree(f"{priv_path}/{path}", f"{pub_path}/{path}")
                 if verbose:
                     print("copied!")
     else:
         if verbose:
-            print("/static is empty")
+            print(f"/{private_path} is empty")
     
     if verbose:
         display_contents("public", verbose)
@@ -127,7 +129,7 @@ def extract_title(markdown: str, is_file=False, verbose=False):
     header_val = header_text[0].strip()
     return header_val
 
-def generate_page(from_path, template_path, dest_path, verbose=False):
+def generate_page(from_path, template_path, dest_path, basepath, verbose=False):
     if verbose:
         print(f"Generating page from {from_path} to {dest_path} using template {template_path}")
     curr_dir = os.getcwd()
@@ -144,6 +146,12 @@ def generate_page(from_path, template_path, dest_path, verbose=False):
     template_file = template_file.replace("{{ Content }}", site_html)
     if verbose:
         print("Content replaced")
+    template_file = template_file.replace('href="/', f'href="{basepath}')
+    if verbose:
+        print("href= replaced")
+    template_file = template_file.replace('src="/', f'src="{basepath}')
+    if verbose:
+        print("src= replaced")
     site_file_path = Path(f"{curr_dir}/{dest_path}")
     site_file_path.parent.mkdir(parents=True, exist_ok=True)
     if verbose:
@@ -152,7 +160,7 @@ def generate_page(from_path, template_path, dest_path, verbose=False):
         f.write(template_file)
     print(f"\nFile {dest_path} and any parent directories have been created.\n")
     
-def generate_all_md_pages(from_dir_path, template_path, dest_dir_path):
+def generate_all_md_pages(from_dir_path, template_path, dest_dir_path, basepath):
     """Finds all .md files in a dir and generates .html files in a target dir."""
     curr_dir = os.getcwd()
     from_path = f"{curr_dir}/{from_dir_path}"
@@ -160,12 +168,12 @@ def generate_all_md_pages(from_dir_path, template_path, dest_dir_path):
     if os.path.isdir(from_path):
         from_path_contents = os.listdir(from_path)
         for path in from_path_contents:
-            generate_all_md_pages(f"{from_dir_path}/{path}",template_path, f"{dest_dir_path}/{path}")
+            generate_all_md_pages(f"{from_dir_path}/{path}",template_path, f"{dest_dir_path}/{path}", basepath)
     # generates page on .md files
     elif os.path.isfile(from_path) and from_dir_path[-3:] == ".md":
         dest_dir_path = dest_dir_path[:-3]
         dest_dir_path += ".html"
-        generate_page(from_dir_path, template_path, dest_dir_path)
+        generate_page(from_dir_path, template_path, dest_dir_path, basepath)
     # skips non .md files
     elif os.path.isfile(from_path):
         pass
@@ -174,9 +182,12 @@ def generate_all_md_pages(from_dir_path, template_path, dest_dir_path):
         raise Exception("Error: i got lost oops")
 
 def main():
-    clear_and_copy()
+    basepath = "/"
+    if len(sys.argv) > 1:
+        print(sys.argv[1])
+        basepath = sys.argv[1]
+    clear_and_copy("static", "docs")
     #display_contents("public")
-    generate_all_md_pages("./content","template.html","./public")
-    
+    generate_all_md_pages("./content","template.html","./docs", basepath)
     
 main()
