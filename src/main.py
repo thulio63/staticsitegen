@@ -5,6 +5,7 @@ from splitter import markdown_to_html_node
 from htmlnode import HTMLNode
 
 def display_contents(search_path:str):
+    """Displays all contents currently in directory."""
     curr_dir = os.getcwd()
     content_path = f"{curr_dir}/{search_path}"
     if os.path.isfile(content_path):
@@ -19,8 +20,31 @@ def display_contents(search_path:str):
         if os.path.isdir(f"{content_path}/{path}"):
             print(f"dir:\t{path}")
     print("")
+    
+def dir_crawler(path_to_search: str, curr_dir=os.getcwd()):
+    """Returns list of all files"""
+    search_path = f"{curr_dir}/{path_to_search}"
+    list_of_contents = []
+    if os.path.isfile(search_path):
+        # this should return the file probably for recursive calls
+        return path_to_search
+    elif os.path.isdir(search_path):
+        path_contents = os.listdir(search_path)
+        path_contents.reverse()
+        for con in path_contents:
+            list_of_contents.append(dir_crawler(con, search_path))
+        
+        return [path_to_search, list_of_contents]
+    else:
+        raise Exception("Not a dir or a file what the fuck is this")
+
+def dir_crawler_painter(list_of_contents):
+    """Takes a file structure from dir_crawler and prints it cleanly."""
+    
+    pass
 
 def clear_and_copy(verbose=False):
+    """Empties public dir and populates it with data in static dir."""
     pub_path = "/Users/andrewthul/workspace/github.com/thulio63/staticsitegen/public"
     stat_path = "/Users/andrewthul/workspace/github.com/thulio63/staticsitegen/static"
     public_contents = os.listdir(pub_path)
@@ -128,22 +152,31 @@ def generate_page(from_path, template_path, dest_path, verbose=False):
         f.write(template_file)
     print(f"\nFile {dest_path} and any parent directories have been created.\n")
     
-def generate_all_pages(template_path):
-    # search for all files in content and call generate_page on all of them
-    
-    
-    pass
+def generate_all_md_pages(from_dir_path, template_path, dest_dir_path):
+    """Finds all .md files in a dir and generates .html files in a target dir."""
+    curr_dir = os.getcwd()
+    from_path = f"{curr_dir}/{from_dir_path}"
+    # calls itself on dirs
+    if os.path.isdir(from_path):
+        from_path_contents = os.listdir(from_path)
+        for path in from_path_contents:
+            generate_all_md_pages(f"{from_dir_path}/{path}",template_path, f"{dest_dir_path}/{path}")
+    # generates page on .md files
+    elif os.path.isfile(from_path) and from_dir_path[-3:] == ".md":
+        dest_dir_path = dest_dir_path[:-3]
+        dest_dir_path += ".html"
+        generate_page(from_dir_path, template_path, dest_dir_path)
+    # skips non .md files
+    elif os.path.isfile(from_path):
+        pass
+    # shit
+    else:
+        raise Exception("Error: i got lost oops")
 
 def main():
     clear_and_copy()
-    #md_file = input("file to extract from:\t")
-    #extract_title("content/index.md", True)
-    generate_page("content/index.md", "template.html", "public/index.html")
-    generate_page("content/blog/glorfindel/index.md", "template.html", "public/blog/glorfindel/index.html")
-    generate_page("content/blog/tom/index.md", "template.html", "public/blog/tom/index.html")
-    generate_page("content/blog/majesty/index.md", "template.html", "public/blog/majesty/index.html")
-    generate_page("content/contact/index.md", "template.html", "public/contact/index.html")
     #display_contents("public")
+    generate_all_md_pages("./content","template.html","./public")
     
     
 main()

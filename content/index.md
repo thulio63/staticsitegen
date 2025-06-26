@@ -1,6 +1,6 @@
 # Tolkien Fan Club
 
-![JRR Tolkien sitting](./images/tolkien.png)
+![JRR Tolkien sitting](/images/tolkien.png)
 
 Here's the deal, **I like Tolkien**.
 
@@ -10,9 +10,9 @@ Here's the deal, **I like Tolkien**.
 
 ## Blog posts
 
-- [Why Glorfindel is More Impressive than Legolas](./blog/glorfindel/index.html)
-- [Why Tom Bombadil Was a Mistake](./blog/tom/index.html)
-- [The Unparalleled Majesty of "The Lord of the Rings"](./blog/majesty/index.html)
+- [Why Glorfindel is More Impressive than Legolas](/blog/glorfindel)
+- [Why Tom Bombadil Was a Mistake](/blog/tom)
+- [The Unparalleled Majesty of "The Lord of the Rings"](/blog/majesty)
 
 ## Reasons I like Tolkien
 
@@ -35,11 +35,12 @@ Here's the deal, **I like Tolkien**.
 
 Here's what `elflang` looks like (the perfect coding language):
 
-```func main(){
+```
+func main(){
     fmt.Println("Aiya, Ambar!")
 }
 ```
 
-Want to get in touch? [Contact me here](./contact/index.html).
+Want to get in touch? [Contact me here](/contact).
 
 This site was generated with a custom-built [static site generator](https://www.boot.dev/courses/build-static-site-generator-python) from the course on [Boot.dev](https://www.boot.dev).

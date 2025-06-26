@@ -15,17 +15,20 @@ def split_nodes_delimiter(old_nodes: list, delimiter, text_type: TextType):
     """Splits list of nodes into new nodes using provided delimiter"""
     new_nodes = []
     adjuster = len(delimiter) - 1 # accounts for multi-char delimiters
+
+    # call recursively on last node to ensure we don't skip text that needs to be adjusted
     for node in old_nodes:
         if delimiter in node.text and node.text_type == TextType.PLAIN:
             first_index = node.text.find(delimiter)
             second_index = node.text.find(delimiter, first_index + 1)
             back_node = TextNode(node.text, node.text_type, node.url)
             back_node.text = back_node.text[second_index + adjuster + 1:]
-            mid_node = TextNode(node.text[first_index + adjuster + 1:second_index], text_type) # doesn't account for url
+            mid_node = TextNode(node.text[first_index + adjuster + 1:second_index], text_type)
             node.text = node.text[:first_index]
             new_nodes.append(node)
             new_nodes.append(mid_node)
-            new_nodes.append(back_node)
+            new_nodes += split_nodes_delimiter([back_node], delimiter, text_type)
+            #new_nodes.append(back_node)
         else:
             new_nodes.append(node)
     
@@ -212,10 +215,20 @@ def markdown_to_html_node(markdown: str):
         match block_to_block_type(block):
             case BlockType.HEADING: 
                 #<h#>
+                children = []
                 # will this fuck up with two headings on adjacent lines?
                 # assuming heading isn't styled, 
+                # FUCK
+                heading_text = text_to_textnodes(block)
                 head_type = block.count('#')
-                heading_node = LeafNode(f"h{head_type}", block[head_type+1:])
+                inline_nodes = []
+                for node in heading_text:
+                    node.text = node.text[head_type + 1:]
+                    inline_nodes.append(TextNode.text_node_to_html_node(node))
+                children.append(ParentNode(f"h{head_type}", inline_nodes))
+                    
+                    
+                heading_node = ParentNode(f"h{head_type}", children)
                 all_nodes.append(heading_node)
             case BlockType.CODE:
                 #<pre><code>
@@ -312,7 +325,6 @@ def markdown_to_html_node(markdown: str):
                 # breaks list items into seperate lines, where they can be changed into nodes
                 old_lines = block.splitlines()
                 #print(old_lines)
-                new_lines = []
                 children = []
                 for line in old_lines:
                     # breaks lines apart by number
@@ -320,12 +332,17 @@ def markdown_to_html_node(markdown: str):
                     #print(splits)
                     # converts text into node
                     text_node = text_to_textnodes(splits[2][1:])
-                    #print(text_node)
-                    # converts text node into html node
+                    # finds inline styling
+                    if len(text_node) > 1:
+                        inline_nodes = []
+                        for node in text_node:
+                            inline_nodes.append(TextNode.text_node_to_html_node(node))
+                        
+                        children.append(ParentNode("li", inline_nodes))
+                        continue
+                    # converts singular text node into html node
                     html_node = TextNode.text_node_to_html_node(text_node[0])
                     #print(html_node)
-
-                            
                     children.append(LeafNode("li", html_node.to_html()))
                 #print(children)
 
