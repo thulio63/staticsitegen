@@ -1,5 +1,5 @@
 from textnode import TextType, TextNode
-from htmlnode import HTMLNode, ParentNode, LeafNode
+from htmlnode import ParentNode, LeafNode
 from enum import Enum
 import re
 

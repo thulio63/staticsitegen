@@ -3,7 +3,6 @@ import shutil
 import sys
 from pathlib import Path
 from splitter import markdown_to_html_node
-from htmlnode import HTMLNode
 
 def display_contents(search_path:str):
     """Displays all contents currently in directory."""
@@ -146,10 +145,10 @@ def generate_page(from_path, template_path, dest_path, basepath, verbose=False):
     template_file = template_file.replace("{{ Content }}", site_html)
     if verbose:
         print("Content replaced")
-    template_file = template_file.replace('href="/', f'href="{basepath}')
+    template_file = template_file.replace("href=\"/", f'href="{basepath}')
     if verbose:
         print("href= replaced")
-    template_file = template_file.replace('src="/', f'src="{basepath}')
+    template_file = template_file.replace("src=\"/", f'src="{basepath}')
     if verbose:
         print("src= replaced")
     site_file_path = Path(f"{curr_dir}/{dest_path}")
@@ -173,7 +172,7 @@ def generate_all_md_pages(from_dir_path, template_path, dest_dir_path, basepath)
     elif os.path.isfile(from_path) and from_dir_path[-3:] == ".md":
         dest_dir_path = dest_dir_path[:-3]
         dest_dir_path += ".html"
-        generate_page(from_dir_path, template_path, dest_dir_path, basepath)
+        generate_page(from_dir_path, template_path, dest_dir_path, basepath, True)
     # skips non .md files
     elif os.path.isfile(from_path):
         pass
