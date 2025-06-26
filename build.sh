@@ -1,1 +1,1 @@
-python3 src/main.py "/thulio63/staticsitegen/"
+python3 src/main.py "/staticsitegen/"
